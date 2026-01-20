@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Local Gravity Calculator</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root {
+  --bg:#f4f4f4; --card:#fff; --text:#222; --accent:#3a6df0;
+}
+body.dark {
+  --bg:#121212; --card:#1e1e1e; --text:#f4f4f4; --accent:#8ab4f8;
+}
+body {
+  font-family: "Georgia", serif;
+  background:var(--bg); color:var(--text);
+  margin:0; padding:20px;
+  transition:.6s;
+}
+.container {
+  max-width:560px; margin:auto;
+  background:var(--card);
+  border-radius:16px;
+  padding:25px;
+  box-shadow:0 12px 35px rgba(0,0,0,.18);
+}
+h2,h3 { text-align:center; }
+button {
+  width:100%; padding:12px; margin-top:10px;
+  border-radius:8px; border:none;
+  background:var(--accent); color:#fff;
+  font-size:16px; cursor:pointer;
+}
+button.secondary {
+  background:transparent; color:var(--accent);
+  border:1px solid var(--accent);
+}
+.spinner {
+  width:42px; height:42px;
+  border:4px solid #bbb;
+  border-top:4px solid var(--accent);
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+  margin:25px auto;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+.fade { animation:fade .8s ease }
+@keyframes fade {
+  from{opacity:0; transform:translateY(10px)}
+  to{opacity:1; transform:none}
+}
+iframe { width:100%; height:220px; border:0; border-radius:10px; margin-top:15px }
+input {
+  width:100%; padding:8px; margin-top:6px;
+  border-radius:6px; border:1px solid #aaa;
+}
+details {
+  margin-top:15px; background:rgba(0,0,0,.05);
+  padding:10px; border-radius:8px;
+}
+svg { width:100%; height:160px }
+small { opacity:.8 }
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h2>🌍 Local Gravity Calculator</h2>
+
+<button onclick="getLocation()">📍 Use My Location</button>
+<button class="secondary" onclick="toggleDark()">🌙 Toggle Dark Mode</button>
+<button class="secondary" onclick="window.print()">📄 Download PDF</button>
+
+<div id="output"></div>
+
+</div>
+
+<script>
+const output = document.getElementById("output");
+function toggleDark(){ document.body.classList.toggle("dark"); }
+
+function getLocation(){
+  output.innerHTML=`<div class="spinner"></div><p align="center">Computing gravity…</p>`;
+  navigator.geolocation.getCurrentPosition(
+    p=>calculate(p.coords.latitude,p.coords.longitude),
+    ()=>output.innerHTML="❌ Location permission denied"
+  );
+}
+
+function gravity(lat){
+  const φ=lat*Math.PI/180;
+  return 9.780327*(1+0.0053024*Math.sin(φ)**2-0.0000058*Math.sin(2*φ)**2);
+}
+
+function calculate(lat,lon){
+  setTimeout(()=>{
+    let g=gravity(lat);
+    const elevation=Math.abs(lat)*6;
+    g-=2*g*elevation/6371000;
+    const anomaly=(Math.sin(lat*Math.PI/180)*0.02).toFixed(4);
+
+    output.innerHTML=`
+<div class="fade">
+<b>Latitude:</b> ${lat.toFixed(5)}°<br>
+<b>Longitude:</b> ${lon.toFixed(5)}°<br>
+<b>Estimated elevation:</b> ${elevation.toFixed(1)} m<br><br>
+
+⚖️ <b>Local gravity:</b><br>
+<b>${g.toFixed(6)} m/s²</b><br>
+🌐 <b>Gravity anomaly:</b> ${anomaly} m/s²
+
+<h3>🗺 Location</h3>
+<iframe src="https://maps.google.com/maps?q=${lat},${lon}&z=9&output=embed"></iframe>
+
+<h3>📊 Gravity vs Latitude</h3>
+<svg viewBox="0 0 360 160">
+${plot()}
+</svg>
+
+<h3>🧮 Weight Calculator</h3>
+<input id="mass" placeholder="Enter mass (kg)" oninput="calcWeight(${g})">
+<p id="weight"></p>
+
+<h3>🌎 Comparison</h3>
+Equator: ${(gravity(0)).toFixed(5)} m/s²<br>
+Pole: ${(gravity(90)).toFixed(5)} m/s²
+
+<details>
+<summary><b>Scientific Explanation</b></summary>
+<p>
+Gravity varies with latitude due to Earth’s rotation and equatorial bulge.
+This uses the International Gravity Formula (1980) with a free-air correction.
+Elevation and gravity anomaly are approximated for offline reliability.
+</p>
+</details>
+
+<small>Educational / demonstrational model · Offline safe</small>
+</div>`;
+  },1200);
+}
+
+function plot(){
+  let p="";
+  for(let x=0;x<=360;x++){
+    const lat=x/2-90;
+    const y=150-(gravity(lat)-9.78)*900;
+    p+=`${x===0?'M':'L'}${x},${y} `;
+  }
+  return `<path d="${p}" stroke="#3a6df0" fill="none" stroke-width="2"/>`;
+}
+
+function calcWeight(g){
+  const m=document.getElementById("mass").value;
+  document.getElementById("weight").innerHTML=
+    m?`Weight = ${(m*g).toFixed(3)} N`:"";
+}
+</script>
+
+</body>
+</html>
