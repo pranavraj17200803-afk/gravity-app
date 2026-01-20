@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gravity by Location</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  max-width: 520px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #f4f4f4;
+  border-radius: 10px;
+  text-align: center;
+}
+button {
+  padding: 12px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+.result {
+  margin-top: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>🌍 Local Gravity Calculator</h2>
+
+<button onclick="getLocation()">📍 Use My Location</button>
+
+<div class="result" id="output"></div>
+
+<script>
+function getLocation() {
+  if (!navigator.geolocation) {
+    output.innerHTML = "❌ Geolocation not supported.";
+    return;
+  }
+
+  output.innerHTML = "⏳ Getting location...";
+
+  navigator.geolocation.getCurrentPosition(
+    position => {
+      calculateGravity(
+        position.coords.latitude,
+        position.coords.longitude
+      );
+    },
+    () => output.innerHTML = "❌ Location permission denied."
+  );
+}
+
+async function calculateGravity(lat, lon) {
+  try {
+    const res = await fetch(
+      `https://api.opentopodata.org/v1/srtm90m?locations=${lat},${lon}`
+    );
+    const data = await res.json();
+    const h = data.results[0].elevation || 0;
+
+    const R = 6371000;
+    const phi = lat * Math.PI / 180;
+
+    let g = 9.780327 *
+      (1 + 0.0053024 * Math.sin(phi) ** 2
+         - 0.0000058 * Math.sin(2 * phi) ** 2);
+
+    g -= (2 * g * h / R);
+
+    output.innerHTML = `
+      <b>Latitude:</b> ${lat.toFixed(6)}°<br>
+      <b>Longitude:</b> ${lon.toFixed(6)}°<br>
+      <b>Elevation:</b> ${h} m<br><br>
+      ⚖️ <b>Local Gravity</b><br>
+      <b>${g.toFixed(6)} m/s²</b>
+    `;
+  } catch {
+    output.innerHTML = "❌ Elevation API error.";
+  }
+}
+</script>
+
+</body>
+</html>
