@@ -18,22 +18,30 @@ body {
   align-items: flex-start;
 }
 
-/* Left & Right boxes */
+/* Boxes */
 .box {
   background: #ffffff;
-  padding: 15px;
+  padding: 20px;
   border-radius: 10px;
   flex: 1;
 }
 
-/* Gravity button */
+/* Buttons */
 button {
-  padding: 12px 20px;
+  padding: 14px 22px;
   font-size: 16px;
   cursor: pointer;
+  border: none;
+  border-radius: 8px;
+  background: #007bff;
+  color: white;
 }
 
-/* Gravity output */
+button:hover {
+  background: #0056b3;
+}
+
+/* Gravity result */
 .result {
   margin-top: 15px;
   padding: 12px;
@@ -41,7 +49,7 @@ button {
   border-radius: 8px;
 }
 
-/* Mobile view */
+/* Mobile */
 @media (max-width: 900px) {
   .container {
     flex-direction: column;
@@ -57,22 +65,14 @@ button {
   <!-- LEFT: ARJUNA JEE -->
   <div class="box">
     <h3>📚 Arjuna JEE 2026</h3>
+    <p>
+      Click the button below to open the Arjuna JEE dashboard
+      in a new tab.
+    </p>
 
-    <iframe
-      src="https://deltastudy.site/study-v2/batches/676e4dee1ec923bc192f38c9?name=Arjuna%20JEE%202026"
-      width="100%"
-      height="650"
-      style="border:1px solid #ccc; border-radius:8px;"
-      loading="lazy">
-    </iframe>
-
-    <div style="margin-top:10px; font-size:14px;">
-      ❌ If it doesn’t load here,
-      <a href="https://deltastudy.site/study-v2/batches/676e4dee1ec923bc192f38c9?name=Arjuna%20JEE%202026"
-         target="_blank">
-        open in new tab
-      </a>
-    </div>
+    <button onclick="openArjuna()">
+      🔗 Open Arjuna JEE 2026
+    </button>
   </div>
 
   <!-- RIGHT: GRAVITY -->
@@ -89,6 +89,13 @@ button {
 <script>
 const output = document.getElementById("output");
 
+function openArjuna() {
+  window.open(
+    "https://deltastudy.site/study-v2/batches/676e4dee1ec923bc192f38c9?name=Arjuna%20JEE%202026",
+    "_blank"
+  );
+}
+
 function getLocation() {
   if (!navigator.geolocation) {
     output.innerHTML = "❌ Geolocation not supported.";
@@ -99,42 +106,26 @@ function getLocation() {
 
   navigator.geolocation.getCurrentPosition(
     position => {
-      calculateGravity(
-        position.coords.latitude,
-        position.coords.longitude
-      );
+      calculateGravity(position.coords.latitude);
     },
     () => output.innerHTML = "❌ Location permission denied."
   );
 }
 
-async function calculateGravity(lat, lon) {
-  try {
-    const res = await fetch(
-      `https://api.opentopodata.org/v1/srtm90m?locations=${lat},${lon}`
-    );
-    const data = await res.json();
-    const h = data.results[0].elevation || 0;
+function calculateGravity(lat) {
+  const phi = lat * Math.PI / 180;
 
-    const R = 6371000;
-    const phi = lat * Math.PI / 180;
+  // WGS-84 International Gravity Formula
+  const g =
+    9.7803253359 *
+    (1 + 0.00193185265241 * Math.sin(phi) ** 2) /
+    Math.sqrt(1 - 0.00669437999013 * Math.sin(phi) ** 2);
 
-    let g = 9.780327 *
-      (1 + 0.0053024 * Math.sin(phi) ** 2
-         - 0.0000058 * Math.sin(2 * phi) ** 2);
-
-    g -= (2 * g * h / R);
-
-    output.innerHTML = `
-      <b>Latitude:</b> ${lat.toFixed(6)}°<br>
-      <b>Longitude:</b> ${lon.toFixed(6)}°<br>
-      <b>Elevation:</b> ${h} m<br><br>
-      ⚖️ <b>Local Gravity</b><br>
-      <b>${g.toFixed(6)} m/s²</b>
-    `;
-  } catch {
-    output.innerHTML = "❌ Elevation API error.";
-  }
+  output.innerHTML = `
+    <b>Latitude:</b> ${lat.toFixed(6)}°<br><br>
+    ⚖️ <b>Local Gravity (Sea-Level)</b><br>
+    <b>${g.toFixed(6)} m/s²</b>
+  `;
 }
 </script>
 
